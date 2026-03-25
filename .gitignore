@@ -71,3 +71,7 @@ Release/
 
 # CubeMX generated - keep the .ioc file but ignore backups
 *.ioc.bak
+
+# Eclipse/CubeIDE metadata
+.metadata/
+.settings/
