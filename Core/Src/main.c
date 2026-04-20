@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "strom.h"
 
 /* USER CODE END Includes */
 
@@ -48,6 +49,9 @@ TIM_HandleTypeDef htim1;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+
+	Strom_t phasen = {0};   // Struktur für Strommessung (alle Werte auf 0)
+
 
 /* USER CODE END PV */
 
@@ -100,6 +104,8 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
+  Strom_Kalibrieren(&hadc1, &phasen);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -109,34 +115,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	 /** uint32_t adc_values[3];
 
-	     for (int i = 0; i < 3; i++)
-	     {
-	         HAL_ADC_Start(&hadc1);
-	         HAL_ADC_PollForConversion(&hadc1, 100);
-	         adc_values[i] = HAL_ADC_GetValue(&hadc1);
-	     }
-	     HAL_ADC_Stop(&hadc1);
+    Strom_Messen(&hadc1, &phasen);
 
-	     char msg[80];
-	     int len = sprintf(msg, "I_U: %lu  I_V: %lu  I_W: %lu\r\n",
-	                       adc_values[0], adc_values[1], adc_values[2]);
-	     HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, 100);
+    char msg[120];
+    int len = sprintf(msg,
+        "raw: U=%4u V=%4u W=%4u | I: U=%+6.2f V=%+6.2f W=%+6.2f  A\r\n",
+        phasen.raw_U, phasen.raw_V, phasen.raw_W,
+        phasen.i_U,   phasen.i_V,   phasen.i_W);
+    HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, 100);
 
-	     HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-	     HAL_Delay(500);**/
-
-	  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-	  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-	  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-	  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-	  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-	  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-
-	  /* HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);  // DSP_GDR_EN LOW = freigeben */
+    HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
+    HAL_Delay(200);
+    /* USER CODE END 3 */
   }
-  /* USER CODE END 3 */
 }
 
 /**
@@ -223,7 +215,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 3;
   hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -233,7 +225,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_84CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
