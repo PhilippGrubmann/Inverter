@@ -1,14 +1,10 @@
 # Projektkontext — Inverter Firmware
-
-Dieses Dokument wird am Anfang jedes neuen Chats eingefügt,
-damit der Assistent sofort den vollen Kontext hat.
-
 ---
 
 ## Projekt
 
-Diplomarbeit: Entwicklung eines Traktionsumrichters (Inverter) für ein Elektro-Kart.
-Zwei Personen: Philipp Grubmann (Hardware + Software), Florian Kiesl.
+Entwicklung eines Traktionsumrichters (Inverter).
+
 Die Hardware (LV-Board, Gate-Treiber-Board, Strommessplatine, Leistungsmodul) ist fertig.
 Jetzt wird die Firmware entwickelt.
 
