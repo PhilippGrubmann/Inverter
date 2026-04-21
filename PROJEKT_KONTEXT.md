@@ -127,22 +127,22 @@ PHASE 4 — Schutz und Robustheit
 | FLT_SET_IV     | ???    | GPIO_Input   |
 | FLT_SET_IW     | ???    | GPIO_Input   |
 | GDR_EN_STATUS  | ???    | GPIO_Input   |
-| FILT_I_U (ADC) | ???    | ADC1_CHx     |
-| FILT_I_V (ADC) | ???    | ADC1_CHx     |
-| FILT_I_W (ADC) | ???    | ADC1_CHx     |
-| U_DC (ADC)     | ???    | ADC2_CHx     |
-| GAS_MCU (ADC)  | ???    | ADC2_CHx     |
-| BRAKE_MCU (ADC)| ???    | ADC2_CHx     |
-| Encoder A      | ???    | TIMx_CH1     |
-| Encoder B      | ???    | TIMx_CH2     |
-| TIM1_CH1 (U)   | ???    | PWM          |
-| TIM1_CH1N (U)  | ???    | PWM_N        |
-| TIM1_CH2 (V)   | ???    | PWM          |
-| TIM1_CH2N (V)  | ???    | PWM_N        |
-| TIM1_CH3 (W)   | ???    | PWM          |
-| TIM1_CH3N (W)  | ???    | PWM_N        |
-| UART TX        | ???    | USART        |
-| UART RX        | ???    | USART        |
+| FILT_I_U (ADC) | PA1    | ADC1_CHx     |
+| FILT_I_V (ADC) | PA2    | ADC1_CHx     |
+| FILT_I_W (ADC) | PC2    | ADC1_CHx     |
+| U_DC (ADC)     | PC3    | ADC2_CHx     |
+| GAS_MCU (ADC)  | PC0    | ADC2_CHx     |
+| BRAKE_MCU (ADC)| PB1    | ADC2_CHx     |
+| Sinus Encoder  | PF6    | TIMx_CH1     |
+| Cosinus Encoder| PF7    | TIMx_CH2     |
+| TIM1_CH1 (U)   | PE9    | PWM          |
+| TIM1_CH1N (U)  | PE8    | PWM_N        |
+| TIM1_CH2 (V)   | PE11   | PWM          |
+| TIM1_CH2N (V)  | PE10   | PWM_N        |
+| TIM1_CH3 (W)   | PE13   | PWM          |
+| TIM1_CH3N (W)  | PE12   | PWM_N        |
+| UART TX        | PD8    | USART3       |
+| UART RX        | PD9    | USART3       |
 
 (Die ??? müssen aus dem Schaltplan eingetragen werden!)
 
