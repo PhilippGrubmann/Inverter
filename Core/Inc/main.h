@@ -59,6 +59,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Sin_Pin GPIO_PIN_6
+#define Sin_GPIO_Port GPIOF
+#define Cos_Pin GPIO_PIN_7
+#define Cos_GPIO_Port GPIOF
 #define I_W_Pin GPIO_PIN_2
 #define I_W_GPIO_Port GPIOC
 #define I_U_Pin GPIO_PIN_1
