@@ -64,6 +64,12 @@ UART_HandleTypeDef huart3;
 	Strom_t phasen = {0};   // Struktur für Strommessung (alle Werte auf 0)
 	foc_state foc = {0};
 
+	// OPEN LOOP CONTROL
+	static float ol_theta = 0.0f;
+	static const float OL_STEP = 0.001257f;   /* 60 RPM */
+	static const float OL_IQ   = 5.0f;        /* 5 A Teststrom in q richtung*/
+
+
 
 /* USER CODE END PV */
 
@@ -138,6 +144,8 @@ int main(void)
   HAL_UART_Transmit(&huart3, (uint8_t*)init_msg, init_len, 100);
 
   foc_init(&foc, TIM1_ARR);
+  pwm_enable();
+  statemachine_set_run();
   HAL_TIM_Base_Start_IT(&htim1);
 
 
@@ -153,15 +161,16 @@ int main(void)
 
     // Strom_Messen(&hadc1, &phasen);
 
-    char msg[120];
-    int len = sprintf(msg,
-        "raw: U=%4u V=%4u W=%4u | I: U=%+6.2f V=%+6.2f W=%+6.2f  A\r\n",
-        phasen.raw_U, phasen.raw_V, phasen.raw_W,
-        phasen.i_U,   phasen.i_V,   phasen.i_W);
-    HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, 100);
-
-
-    HAL_Delay(1000);
+	  char msg[160];
+	  int len = sprintf(msg,
+	      "S:%d F:%d | I: %+6.1f %+6.1f %+6.1f | th:%5.1f | D: %.2f %.2f %.2f\r\n",
+	      statemachine_get_state(),
+	      statemachine_get_fault_code(),
+	      phasen.i_U, phasen.i_V, phasen.i_W,
+	      ol_theta * 57.2958f,
+	      foc.svpwm_data.d_u, foc.svpwm_data.d_v, foc.svpwm_data.d_w);
+	  HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, 100);
+	  HAL_Delay(500);
   /* USER CODE END 3 */
   }
 }
@@ -581,7 +590,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+	// ISR
 	void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		if (htim->Instance != TIM1) return;
@@ -602,11 +611,26 @@ static void MX_GPIO_Init(void)
 	    /* 3. Nur im RUN-State regeln */
 	    if (statemachine_get_state() != STATE_RUN) return;
 
+	    /* Open Loop: theta künstlich hochzählen */
+	    ol_theta += OL_STEP;
+	    if (ol_theta >= 6.2831853f) ol_theta -= 6.2831853f;
+
+	    float limit = U_DC_GEN1_FIXED_V * 0.5f * 1.1547f;
+	    foc_run(&foc, phasen.i_U, phasen.i_V, phasen.i_W,
+	            ol_theta, 0.0f, OL_IQ, limit);
+
+	    // pwm_update(foc.svpwm_data.ccr_u,
+	    //           foc.svpwm_data.ccr_v,
+	    //           foc.svpwm_data.ccr_w);
+
+	    /* Open Loop ENDE */
+
+
 	    /* 4. Encoder auslesen */
 	    // encoder_update();
 	    // float theta = encoder_get_angle_elec();
 
-	    float limit = U_DC_GEN1_FIXED_V * 0.5f * 1.1547f;
+	    // float limit = U_DC_GEN1_FIXED_V * 0.5f * 1.1547f;
 
 
 	    /* 5. FOC-Kette */

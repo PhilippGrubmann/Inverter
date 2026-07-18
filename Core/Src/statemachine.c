@@ -25,3 +25,9 @@ void statemachine_set_fault(fault_code_t code){
     current_fault = code;
     current_state = STATE_FAULT;
 }
+
+void statemachine_set_run(void){
+    if (current_state != STATE_FAULT){
+        current_state = STATE_RUN;
+    }
+}

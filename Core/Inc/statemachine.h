@@ -30,4 +30,7 @@ state_t       statemachine_get_state(void);
 fault_code_t  statemachine_get_fault_code(void);
 void          statemachine_set_fault(fault_code_t code);
 
+// zum testen
+void statemachine_set_run(void);
+
 #endif
