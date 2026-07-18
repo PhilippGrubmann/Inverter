@@ -31,3 +31,8 @@ void statemachine_set_run(void){
         current_state = STATE_RUN;
     }
 }
+
+void statemachine_set_idle(void){
+    current_fault = FAULT_NONE;
+    current_state = STATE_IDLE;
+}

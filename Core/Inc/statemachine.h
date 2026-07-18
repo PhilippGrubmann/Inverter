@@ -33,4 +33,7 @@ void          statemachine_set_fault(fault_code_t code);
 // zum testen
 void statemachine_set_run(void);
 
+void statemachine_set_idle(void);
+
+
 #endif

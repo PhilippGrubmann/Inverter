@@ -12,21 +12,10 @@
 
 #include "stm32f4xx_hal.h"
 
-/* ========== Umrechnungskonstante ========== */
-/* LEM HAIS 150-P: 0,625 V / I_nominal (150 A) → 4,1667 mV/A am Sensor
- * Spannungsteiler 15k/22k auf MCU-Seite: Gain = 22k/(15k+22k) = 0,5946
- * ADC: 3,3 V / 4096 counts = 0,8057 mV/count
- *
- * Empfindlichkeit am ADC: 4,1667 mV/A * 0,5946 = 2,477 mV/A
- * → counts pro Ampere: 2,477 mV/A / 0,8057 mV/count = 3,074 counts/A
- * → Ampere pro count:  1 / 3,074 = 0,3253 A/count
- *
- * HINWEIS: Der Wert 0,0709 A/count aus deinem Memory basiert auf einer
- * anderen Rechnung — wir VERIFIZIEREN das mit dem Labornetzteil!
- * Vorläufig nehmen wir hier einen sauberen theoretischen Wert,
- * der dann beim Gegentest kalibriert wird.
- */
-#define STROM_ADC_TO_AMPERE   0.3253f    /* A pro ADC-count — ZU VERIFIZIEREN */
+
+
+//STROM_ADC_TO_AMPERE = 3.3 / 4096 / (0.625/150 × 15/22)
+#define STROM_ADC_TO_AMPERE   0.2836f       /* A pro ADC-count — ZU VERIFIZIEREN */
 
 /* Struktur für alle 3 Phasen */
 typedef struct {

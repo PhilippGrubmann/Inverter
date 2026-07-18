@@ -161,16 +161,42 @@ int main(void)
 
     // Strom_Messen(&hadc1, &phasen);
 
-	  char msg[160];
-	  int len = sprintf(msg,
-	      "S:%d F:%d | I: %+6.1f %+6.1f %+6.1f | th:%5.1f | D: %.2f %.2f %.2f\r\n",
-	      statemachine_get_state(),
-	      statemachine_get_fault_code(),
-	      phasen.i_U, phasen.i_V, phasen.i_W,
-	      ol_theta * 57.2958f,
-	      foc.svpwm_data.d_u, foc.svpwm_data.d_v, foc.svpwm_data.d_w);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, 100);
-	  HAL_Delay(500);
+	  /* UART-Kommando empfangen (non-blocking) */
+	     uint8_t cmd = 0;
+	     if (HAL_UART_Receive(&huart3, &cmd, 1, 10) == HAL_OK)
+	     {
+	         if (cmd == 's')  /* start */
+	         {
+	             pwm_enable();
+	             statemachine_set_run();
+	             HAL_UART_Transmit(&huart3, (uint8_t*)">> RUN\r\n", 8, 50);
+	         }
+	         else if (cmd == 'x')  /* stop */
+	         {
+	             pwm_disable();
+	             statemachine_set_idle();
+	             HAL_UART_Transmit(&huart3, (uint8_t*)">> IDLE\r\n", 9, 50);
+	         }
+	         else if (cmd == 'r')  /* reset from FAULT */
+	         {
+	             pwm_disable();
+	             statemachine_set_idle();
+	             HAL_UART_Transmit(&huart3, (uint8_t*)">> RESET\r\n", 10, 50);
+	         }
+	     }
+
+	     /* Debug-Ausgabe */
+	     char msg[160];
+	     int len = sprintf(msg,
+	         "S:%d F:%d | I: %+6.1f %+6.1f %+6.1f | th:%5.1f | D: %.2f %.2f %.2f\r\n",
+	         statemachine_get_state(),
+	         statemachine_get_fault_code(),
+	         phasen.i_U, phasen.i_V, phasen.i_W,
+	         ol_theta * 57.2958f,
+	         foc.svpwm_data.d_u, foc.svpwm_data.d_v, foc.svpwm_data.d_w);
+	     HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, 100);
+
+	     HAL_Delay(500);
   /* USER CODE END 3 */
   }
 }
