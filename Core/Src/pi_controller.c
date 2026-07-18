@@ -17,76 +17,47 @@
 
 #include "pi_controller.h"
 
-void PI_Init(PI_Controller *pi, float Kr, float Tn, float T, float limit)
-{
-    /* Parameter setzen */
-    pi->Kr    = Kr;
-    pi->Tn    = Tn;
-    pi->T     = T;
-    pi->limit = limit;
 
-    /* Zustand auf Null — sauberer Start */
-    pi->uk    = 0.0f;
-    pi->uk_1  = 0.0f;
-    pi->ek    = 0.0f;
-    pi->ek_1  = 0.0f;
+
+void init_pi(pi_controller *data, float Kr, float T, float Tn) {
+    data->Kr = Kr;
+    data->T  = T;
+    data->Tn = Tn;
+
+    data->ek   = 0.0f;
+    data->ek_1 = 0.0f;
+    data->uk   = 0.0f;
+    data->uk_1 = 0.0f;
+    data->limit =0.0f;
 }
 
-float PI_Update(PI_Controller *pi, float error, uint8_t enable)
-{
-    if (!enable)
-    {
-        /*
-         * Regler ist aus → kompletter Reset
-         * Warum: Wenn der Inverter abgeschaltet ist, darf
-         * kein alter Zustand im Speicher bleiben.
-         * Sonst gibt's beim Wiedereinschalten einen Stromstoß.
-         */
-        PI_Reset(pi);
-        return 0.0f;
-    }
 
-    /* Fehler speichern */
-    pi->ek = error;
+void pi_update(pi_controller *data, float ek, float limit) {
+    data->ek = ek;
+    // PI formel
+    data->uk = data->uk_1 + data->Kr * (ek - data->ek_1) + data->Kr * (data->T/data->Tn)*ek;
 
-    /*
-     * Geschwindigkeitsform berechnen:
-     *   uk = uk_1 + Kr * (ek - ek_1 + T/Tn * ek)
-     *
-     * Aufgedröselt:
-     *   delta_p = ek - ek_1        → wie schnell ändert sich der Fehler
-     *   delta_i = T/Tn * ek        → aktueller Fehler, skaliert
-     *   delta_u = Kr * (delta_p + delta_i)
-     *   uk = uk_1 + delta_u        → neuer Wert = alter Wert + Änderung
-     */
-    float delta_u = pi->Kr * ((pi->ek - pi->ek_1) + (pi->T / pi->Tn) * pi->ek);
-    pi->uk = pi->uk_1 + delta_u;
+    if (data->uk > limit) {
+		data->uk = limit;
+    } else if (data->uk < -limit) {
+		data->uk = -limit;
+	}
 
-    /*
-     * Anti-Windup: Clamping auf ±limit
-     * Die Diplomarbeit hat nur die positive Seite begrenzt — das ist ein Bug!
-     * Negative Begrenzung ist genauso wichtig (z.B. beim Abbremsen).
-     */
-    if (pi->uk > pi->limit)
-    {
-        pi->uk = pi->limit;
-    }
-    if (pi->uk < -(pi->limit))
-    {
-        pi->uk = -(pi->limit);
-    }
 
-    /* Werte für den nächsten Zyklus speichern */
-    pi->uk_1 = pi->uk;
-    pi->ek_1 = pi->ek;
 
-    return pi->uk;
+    data->uk_1 = data->uk;
+    data->ek_1 = ek;
+    data->limit = limit;
 }
 
-void PI_Reset(PI_Controller *pi)
-{
-    pi->uk    = 0.0f;
-    pi->uk_1  = 0.0f;
-    pi->ek    = 0.0f;
-    pi->ek_1  = 0.0f;
+void pi_reset(pi_controller *data) {
+    data->uk   = 0.0f;
+    data->uk_1 = 0.0f;
+    data->ek   = 0.0f;
+    data->ek_1 = 0.0f;
 }
+
+
+
+
+

@@ -22,7 +22,15 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "foc.h"
+#include "encoder.h"
+#include "statemachine.h"
+#include "pwm.h"
+#include "safety.h"
 #include "strom.h"
+#include "inverter_config.h"
+
+
 
 /* USER CODE END Includes */
 
@@ -43,6 +51,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 ADC_HandleTypeDef hadc3;
 DMA_HandleTypeDef hdma_adc3;
 
@@ -53,6 +62,7 @@ UART_HandleTypeDef huart3;
 /* USER CODE BEGIN PV */
 
 	Strom_t phasen = {0};   // Struktur für Strommessung (alle Werte auf 0)
+	foc_state foc = {0};
 
 
 /* USER CODE END PV */
@@ -65,6 +75,7 @@ static void MX_USART3_UART_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_ADC3_Init(void);
+static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -108,6 +119,7 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM1_Init();
   MX_ADC3_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
 
   /* PWM-Ausgabe starten — alle 3 Kanäle High-Side und Low-Side */
@@ -124,6 +136,11 @@ int main(void)
   int init_len = sprintf(init_msg, "Offset: U=%u V=%u W=%u\r\n",
                          phasen.offset_U, phasen.offset_V, phasen.offset_W);
   HAL_UART_Transmit(&huart3, (uint8_t*)init_msg, init_len, 100);
+
+  foc_init(&foc, TIM1_ARR);
+  HAL_TIM_Base_Start_IT(&htim1);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,7 +151,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    Strom_Messen(&hadc1, &phasen);
+    // Strom_Messen(&hadc1, &phasen);
 
     char msg[120];
     int len = sprintf(msg,
@@ -143,9 +160,10 @@ int main(void)
         phasen.i_U,   phasen.i_V,   phasen.i_W);
     HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, 100);
 
-    HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-    HAL_Delay(2000);
+
+    HAL_Delay(1000);
   /* USER CODE END 3 */
+  }
 }
 
 /**
@@ -272,6 +290,58 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc2.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc2.Init.ScanConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
+
+}
+
+/**
   * @brief ADC3 Initialization Function
   * @param None
   * @retval None
@@ -295,7 +365,7 @@ static void MX_ADC3_Init(void)
   hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
   hadc3.Init.ScanConvMode = ENABLE;
-  hadc3.Init.ContinuousConvMode = DISABLE;
+  hadc3.Init.ContinuousConvMode = ENABLE;
   hadc3.Init.DiscontinuousConvMode = DISABLE;
   hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -511,6 +581,43 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+	void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+	{
+		if (htim->Instance != TIM1) return;
+
+		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);   /* LED toggelt mit 10 kHz */
+
+	    /* 1. Ströme messen (noch polling, später TIM1-Trigger + DMA) */
+	    Strom_Messen(&hadc1, &phasen);
+
+	    /* 2. Überstrom-Check — VOR allem anderen */
+	    if (!safety_check_current(phasen.i_U, phasen.i_V, phasen.i_W))
+	    {
+	        pwm_disable();
+	        statemachine_set_fault(FAULT_OVERCURRENT);
+	        return;
+	    }
+
+	    /* 3. Nur im RUN-State regeln */
+	    if (statemachine_get_state() != STATE_RUN) return;
+
+	    /* 4. Encoder auslesen */
+	    // encoder_update();
+	    // float theta = encoder_get_angle_elec();
+
+	    float limit = U_DC_GEN1_FIXED_V * 0.5f * 1.1547f;
+
+
+	    /* 5. FOC-Kette */
+	    // foc_run(&foc, phasen.i_U, phasen.i_V, phasen.i_W,
+	    //         theta, 0.0f, 0.0f, limit);
+
+	    /* 6. PWM aktualisieren */
+	    // pwm_update(foc_state.svpwm.ccr_u,
+	    //            foc_state.svpwm.ccr_v,
+	    //            foc_state.svpwm.ccr_w);
+	}
 
 /* USER CODE END 4 */
 

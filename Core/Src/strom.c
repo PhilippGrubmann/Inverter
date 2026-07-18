@@ -34,7 +34,7 @@ void Strom_Messen(ADC_HandleTypeDef *hadc, Strom_t *s)
     s->raw_W = HAL_ADC_GetValue(hadc);
 
     /* ADC stoppen — sonst startet er beim nächsten Aufruf nicht sauber neu */
-    // HAL_ADC_Stop(hadc);
+    HAL_ADC_Stop(hadc);
 
     /* Umrechnung in Ampere (offset-kompensiert) */
     s->i_U = ((float)s->raw_U - (float)s->offset_U) * STROM_ADC_TO_AMPERE;
